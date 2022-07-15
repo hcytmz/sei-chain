@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -46,7 +45,7 @@ func (k msgServer) PlaceOrders(goCtx context.Context, msg *types.MsgPlaceOrders)
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	var calculatedCollateral sdk.Dec = sdk.NewDecFromBigInt(big.NewInt(0))
+	calculatedCollateral := sdk.NewDecFromBigInt(big.NewInt(0))
 	for _, order := range msg.Orders {
 		calculatedCollateral = calculatedCollateral.Add(order.Price.Mul(order.Quantity))
 	}
@@ -55,10 +54,9 @@ func (k msgServer) PlaceOrders(goCtx context.Context, msg *types.MsgPlaceOrders)
 		// throw error if current funds amount is less than calculatedCollateral
 		if msg.Funds[0].Amount.LT(calculatedCollateral.Mul(sdk.NewDecFromInt(sdk.NewInt(1000000))).RoundInt()) {
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, "insufficient funds to place order")
-		} else {
-			msg.Funds[0].Amount = calculatedCollateral.Mul(sdk.NewDecFromInt(sdk.NewInt(1000000))).RoundInt()
-			msg.Funds[0].Denom = msg.Orders[0].PriceDenom
 		}
+		msg.Funds[0].Amount = calculatedCollateral.Mul(sdk.NewDecFromInt(sdk.NewInt(1000000))).RoundInt()
+		msg.Funds[0].Denom = msg.Orders[0].PriceDenom
 	}
 
 	if err := k.transferFunds(spanCtx, msg); err != nil {
